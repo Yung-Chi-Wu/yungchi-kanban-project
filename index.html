@@ -9,73 +9,219 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
+    <style>
+        #taskModal {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #modalOverlay.hidden {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 
-<body class="p-6 md:p-10 text-slate-200">
-    <header class="flex justify-between items-center mb-10">
-        <h1 class="text-3xl font-black italic tracking-tighter text-indigo-500">NEXT PLAY <span
-                class="text-white text-2xl not-italic">GAMES</span></h1>
+<body class="bg-[#0f172a] p-6 md:p-10 text-slate-200 min-h-screen overflow-x-hidden">
 
-        <div class="flex flex-1 max-w-md mx-4 w-full">
-            <input id="searchInput" type="text" placeholder="Search tasks..."
-                class="w-full bg-slate-900 border border-slate-700 px-4 py-2 rounded-full focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
-        </div>
-
-        <button onclick="openModal()"
-            class="bg-indigo-600 px-6 py-2 rounded-full font-bold hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95">＋
-            New Task</button>
-    </header>
-
-    <main class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="col-wrapper">
-            <h3 class="status-header text-slate-500">TODO</h3>
-            <div id="TODO" class="kanban-column"></div>
-        </div>
-        <div class="col-wrapper">
-            <h3 class="status-header text-amber-500">IN PROGRESS</h3>
-            <div id="IN_PROGRESS" class="kanban-column"></div>
-        </div>
-        <div class="col-wrapper">
-            <h3 class="status-header text-blue-500">IN REVIEW</h3>
-            <div id="IN_REVIEW" class="kanban-column"></div>
-        </div>
-        <div class="col-wrapper">
-            <h3 class="status-header text-emerald-500">DONE</h3>
-            <div id="DONE" class="kanban-column"></div>
-        </div>
-    </main>
+    <div id="modalOverlay" onclick="closePanel()"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[40] hidden opacity-0 transition-opacity"></div>
 
     <div id="taskModal"
-        class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-        <div class="bg-slate-800 p-8 rounded-3xl w-full max-w-md border border-slate-700 shadow-2xl transition-all">
-            <h2 class="text-xl font-bold mb-6 text-white">Add New Task</h2>
-
-            <input id="taskTitle" type="text" placeholder="What needs to be done?"
-                class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl mb-4 focus:ring-2 focus:ring-indigo-500 outline-none text-white">
-
-            <textarea id="taskDesc" placeholder="Any extra details?"
-                class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl mb-4 h-32 outline-none resize-none text-white"></textarea>
-
-            <div class="mb-6">
-                <label class="text-[10px] font-bold text-slate-500 mb-2 block tracking-widest uppercase">Select
-                    Label</label>
-                <select id="taskLabel"
-                    class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl outline-none text-slate-300 focus:ring-2 focus:ring-indigo-500">
-                    <option value="Feature">✨ Feature</option>
-                    <option value="Bug">🪲 Bug</option>
-                    <option value="Design">🎨 Design</option>
-                    <option value="Urgent">🔥 Urgent</option>
-                </select>
+        class="fixed right-0 top-0 h-full w-full max-w-md bg-slate-900 border-l border-slate-700 shadow-2xl z-[50] translate-x-full overflow-y-auto">
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-white tracking-tight">Manage Task</h2>
+                <button onclick="closePanel()" class="text-slate-400 hover:text-white text-2xl">✕</button>
             </div>
 
-            <div class="flex gap-4">
-                <button onclick="closeModal()"
-                    class="flex-1 text-slate-400 font-semibold hover:text-white transition">Cancel</button>
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Task
+                        Title</label>
+                    <input id="taskTitle" type="text" placeholder="e.g. Implement Slide-over"
+                        class="w-full bg-slate-800 border border-slate-700 p-4 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Status</label>
+                        <select id="taskStatus"
+                            class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl outline-none text-slate-300">
+                            <option value="TODO">Todo</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="IN_REVIEW">In Review</option>
+                            <option value="DONE">Done</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Priority</label>
+                        <select id="taskPriority"
+                            class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl outline-none text-slate-300">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Description</label>
+                    <textarea id="taskDesc" placeholder="Describe the task details..."
+                        class="w-full bg-slate-800 border border-slate-700 p-4 rounded-xl h-32 outline-none resize-none text-white"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Assignee</label>
+                        <select id="taskAssignee" multiple
+                            class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl outline-none text-slate-300 h-24">
+                            <option value="Yung-Chi">Yung-Chi (Boston)</option>
+                            <option value="Nicholas">Nicholas (CTO)</option>
+                            <option value="Sid">Sid (CEO)</option>
+                            <option value="Anonymous">Anonymous</option>
+                        </select>
+                        <p class="text-[10px] text-slate-500 mt-1">Click to select multiple users</p>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Due
+                            Date</label>
+                        <input id="taskDueDate" type="date"
+                            class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl outline-none text-slate-300">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Label
+                        Tag</label>
+                    <select id="taskLabel"
+                        class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl outline-none text-slate-300">
+                        <option value="Feature">✨ Feature</option>
+                        <option value="Bug">🪲 Bug</option>
+                        <option value="Design">🎨 Design</option>
+                        <option value="Urgent">🔥 Urgent</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-10 flex flex-col gap-3">
                 <button id="saveBtn"
-                    class="flex-1 bg-indigo-600 py-3 rounded-xl font-bold hover:bg-indigo-500 transition disabled:opacity-50">Create</button>
+                    class="w-full bg-indigo-600 py-4 rounded-xl font-bold text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50">
+                    Create Task
+                </button>
+                <button onclick="closePanel()"
+                    class="w-full py-3 text-slate-500 font-semibold hover:text-white transition">Cancel</button>
+                <button id="deleteBtn" onclick="handleDeleteFromModal()"
+                    class="hidden w-full mt-4 py-2 text-red-500/50 hover:text-red-500 text-xs font-medium border border-red-500/20 rounded-lg transition-colors">
+                    Delete Task
+                </button>
             </div>
         </div>
     </div>
+
+    <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+        <h1 class="text-3xl font-black italic tracking-tighter text-indigo-500">
+            NEXT PLAY <span class="text-white text-2xl not-italic">GAMES</span>
+        </h1>
+
+        <div class="flex flex-1 max-w-md mx-4 w-full">
+            <input id="searchInput" type="text" placeholder="Search tasks..."
+                class="w-full bg-slate-900/50 border border-slate-700/50 px-5 py-2.5 rounded-full focus:ring-2 focus:ring-indigo-500 outline-none text-sm backdrop-blur-sm transition-all">
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="document.getElementById('teamSection').classList.toggle('hidden')"
+                class="text-slate-400 hover:text-white text-xs font-bold uppercase tracking-widest border border-slate-700 px-4 py-2.5 rounded-full hover:bg-slate-800 transition">
+                Team Members
+            </button>
+            <button onclick="openPanel('TODO')"
+                class="bg-indigo-600 px-6 py-2.5 rounded-full font-bold hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+                <span class="text-xl">＋</span> New Task
+            </button>
+    </header>
+    <section id="teamSection"
+        class="hidden mb-10 bg-slate-900/80 p-6 rounded-2xl border border-slate-800 backdrop-blur-md">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-black tracking-widest text-indigo-400 uppercase">Manage Team Members</h3>
+            <button onclick="document.getElementById('teamSection').classList.add('hidden')"
+                class="text-slate-500 hover:text-white">✕</button>
+        </div>
+        <div id="userList" class="flex flex-wrap gap-4 mb-6"></div>
+        <div class="flex gap-2 max-w-sm">
+            <input id="newUserName" type="text" placeholder="Enter name..."
+                class="flex-1 bg-slate-800 border border-slate-700 p-2 rounded-lg text-xs outline-none focus:ring-1 focus:ring-indigo-500 text-white">
+            <button onclick="addUser()"
+                class="bg-indigo-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-500 transition text-white">Add
+                User</button>
+        </div>
+    </section>
+
+    <main class="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+        <div class="col-wrapper bg-slate-900/30 p-4 rounded-2xl border border-slate-800/50">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <h3 class="text-[11px] font-black tracking-[0.2em] text-slate-500 uppercase">Todo</h3>
+                <span id="TODO-count"
+                    class="bg-indigo-900/50 text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+            </div>
+            <div id="TODO" class="kanban-column min-h-[500px] space-y-3"></div>
+            <button onclick="openPanel('TODO')"
+                class="w-full mt-4 py-2 text-slate-500 hover:text-indigo-400 text-sm font-medium transition-colors border-2 border-dashed border-slate-800 rounded-xl hover:border-indigo-500/50">
+                + Add Task
+            </button>
+        </div>
+
+        <div class="col-wrapper bg-slate-900/30 p-4 rounded-2xl border border-slate-800/50">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <h3 class="text-[11px] font-black tracking-[0.2em] text-amber-500 uppercase">In Progress</h3>
+                <span id="IN_PROGRESS-count"
+                    class="bg-indigo-900/50 text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+            </div>
+            <div id="IN_PROGRESS" class="kanban-column min-h-[500px] space-y-3"></div>
+            <button onclick="openPanel('IN_PROGRESS')"
+                class="w-full mt-4 py-2 text-slate-500 hover:text-amber-400 text-sm font-medium transition-colors border-2 border-dashed border-slate-800 rounded-xl hover:border-amber-500/50">
+                + Add Task
+            </button>
+        </div>
+
+        <div class="col-wrapper bg-slate-900/30 p-4 rounded-2xl border border-slate-800/50">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <h3 class="text-[11px] font-black tracking-[0.2em] text-blue-500 uppercase">In Review</h3>
+                <span id="IN_REVIEW-count"
+                    class="bg-indigo-900/50 text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+            </div>
+            <div id="IN_REVIEW" class="kanban-column min-h-[500px] space-y-3"></div>
+            <button onclick="openPanel('IN_REVIEW')"
+                class="w-full mt-4 py-2 text-slate-500 hover:text-blue-400 text-sm font-medium transition-colors border-2 border-dashed border-slate-800 rounded-xl hover:border-blue-500/50">
+                + Add Task
+            </button>
+        </div>
+
+        <div class="col-wrapper bg-slate-900/30 p-4 rounded-2xl border border-slate-800/50">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <h3 class="text-[11px] font-black tracking-[0.2em] text-emerald-500 uppercase">Done</h3>
+                <span id="DONE-count"
+                    class="bg-indigo-900/50 text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+            </div>
+            <div id="DONE" class="kanban-column min-h-[500px] space-y-3"></div>
+            <button onclick="openPanel('DONE')"
+                class="w-full mt-4 py-2 text-slate-500 hover:text-emerald-400 text-sm font-medium transition-colors border-2 border-dashed border-slate-800 rounded-xl hover:border-emerald-500/50">
+                + Add Task
+            </button>
+        </div>
+    </main>
 
     <script src="api.js"></script>
     <script src="app.js"></script>
