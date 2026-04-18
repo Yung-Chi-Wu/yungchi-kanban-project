@@ -132,11 +132,16 @@ function isFormDirty() {
     const task = allTasks.find(t => String(t.id) === String(currentEditingId));
     if (!task) return false;
 
-    return taskTitle.value !== task.title ||
-        taskDesc.value !== task.description ||
-        taskStatus.value !== task.status ||
-        taskPriority.value !== task.priority ||
-        taskLabel.value !== (task.label || 'Feature'); // 修正 Label 比較
+    const assigneeSelect = document.getElementById('taskAssignee');
+    const selectedAssignees = Array.from(assigneeSelect.selectedOptions).map(opt => opt.value).join(', ');
+    
+    return titleInput.value !== task.title ||
+        descInput.value !== (task.description || '') ||
+        statusSelect.value !== task.status ||
+        (prioritySelect && prioritySelect.value !== (task.priority || 'Medium')) ||
+        (labelSelect && labelSelect.value !== (task.label || 'Feature')) ||
+        (dateInput && dateInput.value !== (task.dueDate || '')) ||
+        (assigneeSelect && selectedAssignees !== (task.assignee || 'Anonymous'));
 }
 
 function closePanel(force = false) {
