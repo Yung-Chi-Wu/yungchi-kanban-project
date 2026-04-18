@@ -6,6 +6,7 @@ const _db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const API = {
     async init() {
+        // init anonymous user
         const { data: { session } } = await _db.auth.getSession();
 
         if (session) {
@@ -23,28 +24,42 @@ const API = {
         const { data, error } = await _db
             .from('tasks')
             .select('*')
-            .order('created_at', { ascending: true });
+            .order('created_at', { ascending: false }); // new task in the front
 
         if (error) throw error;
         return data || [];
     },
 
-    async updateStatus(id, newStatus) {
-        const { error } = await _db
+    async update(id, updates) {
+        const { data, error } = await _db
             .from('tasks')
-            .update({ status: newStatus })
-            .eq('id', id);
+            .update({
+                title: updates.title,
+                description: updates.description,
+                status: updates.status,
+                label: updates.label,
+                priority: updates.priority,
+                dueDate: updates.dueDate,
+                assignee: updates.assignee
+            })
+            .eq('id', id)
+            .select();
 
         if (error) throw error;
+        return data[0];
     },
 
-    async create(title, desc, label) { // ADD LABEL
+    async create(title, desc, label, status = 'TODO', priority = 'Medium', dueDate = '', assignee = 'Anonymous') {
         const { data, error } = await _db
             .from('tasks')
             .insert([{
                 title,
                 description: desc,
-                label: label 
+                label: label,
+                status: status,
+                priority: priority,
+                dueDate: dueDate,
+                assignee: assignee
             }])
             .select();
 
@@ -56,6 +71,15 @@ const API = {
         const { error } = await _db
             .from('tasks')
             .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+    },
+
+    async updateStatus(id, newStatus) {
+        const { error } = await _db
+            .from('tasks')
+            .update({ status: newStatus })
             .eq('id', id);
 
         if (error) throw error;
