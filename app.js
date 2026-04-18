@@ -126,7 +126,7 @@ function openPanel(status = 'TODO', taskId = null) {
 // Check whether the panel is edited
 function isFormDirty() {
     if (!currentEditingId) {
-        return taskTitle.value.trim() !== "";
+        return titleInput.value.trim() !== "";
     }
 
     const task = allTasks.find(t => String(t.id) === String(currentEditingId));
@@ -134,7 +134,7 @@ function isFormDirty() {
 
     const assigneeSelect = document.getElementById('taskAssignee');
     const selectedAssignees = Array.from(assigneeSelect.selectedOptions).map(opt => opt.value).join(', ');
-    
+
     return titleInput.value !== task.title ||
         descInput.value !== (task.description || '') ||
         statusSelect.value !== task.status ||
