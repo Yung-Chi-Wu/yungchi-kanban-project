@@ -10,10 +10,10 @@ const API = {
         const { data: { session } } = await _db.auth.getSession();
 
         if (session) {
-            console.log("Welcome back! Existing User ID:", session.user.id);
+            // console.log("Welcome back! Existing User ID:", session.user.id);
             return session.user;
         }
-        console.log("No session found. Signing in as new guest...");
+        // console.log("No session found. Signing in as new guest...");
         const { data, error } = await _db.auth.signInAnonymously();
         if (error) throw error;
 
