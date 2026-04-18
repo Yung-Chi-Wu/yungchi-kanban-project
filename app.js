@@ -28,6 +28,11 @@ async function initApp() {
         alert("Connection failed. Please check your API.");
     }
 }
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
 // Event Listener
 function setupEventListeners() {
@@ -61,7 +66,7 @@ function setupEventListeners() {
 // Panel Control
 function openPanel(status = 'TODO', taskId = null) {
     console.log("openPanel triggered:", { status, taskId }); // Debug 1
-
+    const deleteBtn = document.getElementById('deleteBtn');
     currentEditingId = taskId;
 
     // Show Panel
@@ -84,6 +89,7 @@ function openPanel(status = 'TODO', taskId = null) {
     }
 
     if (taskId) {
+        if (deleteBtn) deleteBtn.classList.remove('hidden');
         console.log("Looking for Task in allTasks...", allTasks); // Debug 2
         const task = allTasks.find(t => String(t.id) === String(taskId));
 
@@ -112,44 +118,25 @@ function openPanel(status = 'TODO', taskId = null) {
         resetForm();
         statusSelect.value = status;
         saveBtn.innerText = "Create Task";
+        if (deleteBtn) deleteBtn.classList.add('hidden');
     }
     setTimeout(() => updateGhostCard(titleInput.value), 50);
     toggleCreateButton();
 }
 // Check whether the panel is edited
 function isFormDirty() {
-    const title = titleInput.value.trim();
-    const desc = descInput.value.trim();
-    const status = statusSelect.value;
-    const priority = prioritySelect.value;
-    const date = dateInput.value;
-
-    // Check assignee data
-    const assigneeSelect = document.getElementById('taskAssignee');
-    const selectedPeople = Array.from(assigneeSelect.selectedOptions).map(opt => opt.value);
-    const currentAssigneeStr = selectedPeople.sort().join(',').toLowerCase().replace(/\s+/g, '');
-
-    if (currentEditingId) {
-        // Edit Mode check
-        const task = allTasks.find(t => String(t.id) === String(currentEditingId));
-        if (!task) return false;
-        const dbAssigneeStr = task.assignee ? 
-            task.assignee.split(',').map(n => n.trim().toLowerCase()).sort().join(',').replace(/\s+/g, '') : 
-            'anonymous';
-        const isTitleChanged = title !== task.title;
-        const isDescChanged = desc !== (task.description || '');
-        const isStatusChanged = status !== task.status;
-        const isPriorityChanged = priority !== (task.priority || 'Medium');
-        const isDateChanged = date !== (task.dueDate || '');
-        const isAssigneeChanged = currentAssigneeStr !== dbAssigneeStr;
-
-        // If changed return false
-        return isTitleChanged || isDescChanged || isStatusChanged ||
-            isPriorityChanged || isDateChanged || isAssigneeChanged;
-    } else {
-        // Add Mode
-        return title !== "" || desc !== "" || selectedPeople.length > 0;
+    if (!currentEditingId) {
+        return taskTitle.value.trim() !== "";
     }
+
+    const task = allTasks.find(t => String(t.id) === String(currentEditingId));
+    if (!task) return false;
+
+    return taskTitle.value !== task.title ||
+        taskDesc.value !== task.description ||
+        taskStatus.value !== task.status ||
+        taskPriority.value !== task.priority ||
+        taskLabel.value !== (task.label || 'Feature'); // 修正 Label 比較
 }
 
 function closePanel(force = false) {
@@ -262,7 +249,12 @@ function updateColumnCounts() {
         }
     });
 }
-
+function handleDeleteFromModal() {
+    if (currentEditingId && confirm('Are you sure you want to delete this task?')) {
+        handleDelete(currentEditingId);
+        closePanel(true);
+    }
+}
 async function renderBoard() {
     allTasks = await API.getTasks();
     filterAndRender();
@@ -313,7 +305,7 @@ function filterAndRender() {
             <button onclick="event.stopPropagation(); handleDelete('${t.id}')" 
                     class="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs">✕</button>
         </div>
-        <h4 class="font-bold text-slate-100 leading-tight">${t.title}</h4>
+        <h4 class="font-bold text-slate-100 leading-tight">${escapeHtml(t.title)}</h4>
         <div class="flex justify-between items-center mt-4">
             <div class="flex items-center">
                 <div class="flex items-center mr-2">
