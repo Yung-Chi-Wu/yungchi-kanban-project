@@ -24,7 +24,7 @@ async function initApp() {
         renderUserManagement();
         setupEventListeners();
     } catch (e) {
-        console.error("Initialization error:", e);
+        // console.error("Initialization error:", e);
         alert("Connection failed. Please check your API.");
     }
 }
@@ -58,14 +58,14 @@ function setupEventListeners() {
             e.target.selected = !e.target.selected;
             assigneeSelect.focus();
             assigneeSelect.dispatchEvent(new Event('change'))
-            console.log("Current Selection:", Array.from(assigneeSelect.selectedOptions).map(o => o.value)); // Checking bug
+            // console.log("Current Selection:", Array.from(assigneeSelect.selectedOptions).map(o => o.value)); // Checking bug
         }
     };
 }
 
 // Panel Control
 function openPanel(status = 'TODO', taskId = null) {
-    console.log("openPanel triggered:", { status, taskId }); // Debug 1
+    // console.log("openPanel triggered:", { status, taskId }); // Debug 1
     const deleteBtn = document.getElementById('deleteBtn');
     currentEditingId = taskId;
 
@@ -90,11 +90,11 @@ function openPanel(status = 'TODO', taskId = null) {
 
     if (taskId) {
         if (deleteBtn) deleteBtn.classList.remove('hidden');
-        console.log("Looking for Task in allTasks...", allTasks); // Debug 2
+        // console.log("Looking for Task in allTasks...", allTasks); // Debug 2
         const task = allTasks.find(t => String(t.id) === String(taskId));
 
         if (task) {
-            console.log("Task found:", task.title);
+            // console.log("Task found:", task.title);
             titleInput.value = task.title;
             descInput.value = task.description || '';
             statusSelect.value = task.status;
@@ -109,7 +109,7 @@ function openPanel(status = 'TODO', taskId = null) {
             }
             saveBtn.innerText = "Save Changes";
         } else {
-            console.error("Task not found in allTasks! This is why it's not popping up.");// Debug 3
+            // console.error("Task not found in allTasks! This is why it's not popping up.");// Debug 3
             // If not found, close
             closePanel();
             return;
@@ -126,17 +126,22 @@ function openPanel(status = 'TODO', taskId = null) {
 // Check whether the panel is edited
 function isFormDirty() {
     if (!currentEditingId) {
-        return taskTitle.value.trim() !== "";
+        return titleInput.value.trim() !== "";
     }
 
     const task = allTasks.find(t => String(t.id) === String(currentEditingId));
     if (!task) return false;
 
-    return taskTitle.value !== task.title ||
-        taskDesc.value !== task.description ||
-        taskStatus.value !== task.status ||
-        taskPriority.value !== task.priority ||
-        taskLabel.value !== (task.label || 'Feature'); // 修正 Label 比較
+    const assigneeSelect = document.getElementById('taskAssignee');
+    const selectedAssignees = Array.from(assigneeSelect.selectedOptions).map(opt => opt.value).join(', ');
+
+    return titleInput.value !== task.title ||
+        descInput.value !== (task.description || '') ||
+        statusSelect.value !== task.status ||
+        (prioritySelect && prioritySelect.value !== (task.priority || 'Medium')) ||
+        (labelSelect && labelSelect.value !== (task.label || 'Feature')) ||
+        (dateInput && dateInput.value !== (task.dueDate || '')) ||
+        (assigneeSelect && selectedAssignees !== (task.assignee || 'Anonymous'));
 }
 
 function closePanel(force = false) {
@@ -172,6 +177,13 @@ function resetForm() {
     titleInput.value = '';
     descInput.value = '';
     if (dateInput) dateInput.value = '';
+    if (prioritySelect) prioritySelect.value = 'Medium';
+    if (labelSelect) labelSelect.value = 'Feature';
+
+    const assigneeSelect = document.getElementById('taskAssignee');
+    if (assigneeSelect) {
+        Array.from(assigneeSelect.options).forEach(opt => opt.selected = false);
+    }
     titleInput.classList.remove('border-red-500');
 }
 
@@ -327,7 +339,7 @@ saveBtn.onclick = async () => {
         return;
     }
 
-    const originalTask = currentEditingId ? allTasks.find(t => t.id === currentEditingId) : {};
+    const originalTask = currentEditingId ? allTasks.find(t => t.id === String(currentEditingId)) : {};
 
     const assigneeSelect = document.getElementById('taskAssignee');
     const selectedAssignees = Array.from(assigneeSelect.selectedOptions).map(opt => opt.value);
@@ -369,7 +381,7 @@ saveBtn.onclick = async () => {
 
         saveBtn.innerText = "Success ✓";
     } catch (e) {
-        console.error("Save error:", e);
+        // console.error("Save error:", e);
         alert("Failed to save changes.");
         saveBtn.innerText = currentEditingId ? "Save Changes" : "Create Task";
     } finally {
@@ -407,9 +419,9 @@ document.querySelectorAll('.kanban-column').forEach(col => {
                 const task = allTasks.find(t => String(t.id) === String(taskId));
                 if (task) task.status = newStatus;
                 updateColumnCounts(); // Update column count
-                console.log(`Task ${taskId} moved to ${newStatus}`);
+                //console.log(`Task ${taskId} moved to ${newStatus}`);
             } catch (e) {
-                console.error("Move failed:", e);
+                //console.error("Move failed:", e);
                 renderBoard();
             }
         }
